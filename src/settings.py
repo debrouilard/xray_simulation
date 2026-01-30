@@ -1,20 +1,21 @@
 import pygame
 
-COL_BG = (255, 255, 255)       
-COL_UI_BG = (242, 245, 248)    
-COL_ACCENT = (0, 102, 204)     
-COL_TEXT = (30, 40, 50)        
-COL_SHIELD = (120, 125, 130)
+# Layout
+WIDTH, HEIGHT = 700, 600
 
-WIDTH, HEIGHT = 600, 500 
-FPS = 60
+# Professional Medical Palette
+BLACK = (10, 10, 10)
+PANEL_BG = (22, 22, 22)
+GLASS_COLOR = (70, 70, 85)
+TUNGSTEN = (180, 180, 190)
+COPPER = (184, 115, 51)
+RED = (255, 60, 60)      
+BLUE = (60, 160, 255)    
+SUCCESS_GREEN = (0, 220, 100)
+WHITE = (245, 245, 245)
+LEAD_GRAY = (65, 65, 75) 
 
-# Tightened coordinates for 600x500
-CATHODE_X = 50
-ANODE_X = 350      
-CENTER_Y = 180      
-COMPONENT_HEIGHT = 100 
-SHIELD_Y = 310  # Positioned to grow downward safely
-
-def get_font(size, bold=True):
-    return pygame.font.SysFont("Segoe UI", size, bold=bold)
+# Component Positioning
+CATHODE_X = 410
+ANODE_X = 345            
+SHIELD_Y = 480

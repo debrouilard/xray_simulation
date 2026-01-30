@@ -1,18 +1,22 @@
 import pygame
 from src.settings import *
 
-class Shield:
+class LeadShield:
     def __init__(self):
-        # Shifted left: starts at ANODE_X and extends leftward
-        # Width is adjusted to cover the area between Cathode and Anode
-        self.rect = pygame.Rect(ANODE_X - 250, SHIELD_Y, 340, 20) 
+        self.rect = pygame.Rect(220, SHIELD_Y, 300, 10)
+        self.label_font = pygame.font.SysFont("Arial", 11, bold=True)
 
-    def draw(self, surface, thick):
-        self.rect.height = int(thick)
-        pygame.draw.rect(surface, COL_SHIELD, self.rect, border_radius=3)
+    def is_in_shield_range(self, pos, thickness):
+        if self.rect.x < pos[0] < self.rect.x + self.rect.width:
+            if self.rect.y < pos[1] < self.rect.y + thickness:
+                return True
+        return False
+
+    def draw(self, screen, thickness):
+        # Reduced Shield Label
+        screen.blit(self.label_font.render("LEAD SHIELD", True, WHITE), (self.rect.x + 110, self.rect.y - 18))
         
-        # Shortened text label
-        lbl = get_font(12).render("Shield", True, (255, 255, 255))
-        # Placed slightly left of center for better visibility
-        text_rect = lbl.get_rect(center=(self.rect.centerx - 20, self.rect.y + 12))
-        surface.blit(lbl, text_rect)
+        if thickness > 0:
+            s_rect = pygame.Rect(self.rect.x, self.rect.y, self.rect.width, int(thickness))
+            pygame.draw.rect(screen, LEAD_GRAY, s_rect)
+            pygame.draw.rect(screen, WHITE, s_rect, 1)

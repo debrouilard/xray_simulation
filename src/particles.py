@@ -1,47 +1,76 @@
 import pygame
 import random
+import math
 from src.settings import *
 
-class ParticleManager:
+class ParticleSystem:
     def __init__(self):
-        self.electrons = []
-        self.intensity_data = 0 
+        self.particles = []
+        self.anode_hits = 0
+        self.cathode_hits = 0
 
-    def spawn_electron(self, rate):
-        if random.randint(0, 100) < rate:
-            self.electrons.append({
-                'x': CATHODE_X + 55, 
-                'y': CENTER_Y + random.randint(-5, 5),
-                'state': 'red',
-                'vx': 0, 'vy': 0
+    def update(self, kvp, ma, rate, speed, shield_thick, shield_obj, anode_angle):
+        self.anode_hits = 0
+        self.cathode_hits = 0
+        
+        # Spawn Electrons (Red) based on mA and Rate
+        if random.random() < (ma / 500) * (rate / 10):
+            self.particles.append({
+                'pos': [500, 300 + random.randint(-4, 4)],
+                'color': RED,
+                'state': 'flying',
+                'vel': [-speed, 0]
             })
 
-    def update(self, speed, anode_target_rect, shield_rect, thick_val):
-        self.intensity_data = 0 
-        move_speed = speed * 0.18
-        
-        for p in self.electrons[:]:
-            if p['state'] == 'red':
-                p['x'] += move_speed
-                # STRICT COLLISION: Stop at the target face
-                if p['x'] >= anode_target_rect.left:
-                    p['x'] = anode_target_rect.left 
-                    p['state'] = 'purple'
-                    p['vx'] = random.uniform(-1, -3) 
-                    p['vy'] = random.uniform(2, 6)
-                    self.intensity_data += 1
-            else:
-                p['x'] += p['vx']
-                p['y'] += p['vy']
-                
-                if shield_rect.collidepoint(p['x'], p['y']):
-                    if random.randint(0, 120) < thick_val:
-                        self.electrons.remove(p)
-                
-                elif p['y'] > 700 or p['x'] < 0:
-                    if p in self.electrons: self.electrons.remove(p)
+        for p in self.particles[:]:
+            p['pos'][0] += p['vel'][0]
+            p['pos'][1] += p['vel'][1]
 
-    def draw(self, surface):
-        for p in self.electrons:
-            color = (255, 60, 60) if p['state'] == 'red' else (130, 50, 250)
-            pygame.draw.circle(surface, color, (int(p['x']), int(p['y'])), 3)
+            # Calculate the tilted impact X-coordinate
+            tilt_x_adjustment = (p['pos'][1] - 300) * math.tan(math.radians(anode_angle))
+            impact_x = ANODE_X + tilt_x_adjustment
+
+            # Impact Logic (Anode Target)
+            if p['state'] == 'flying' and p['pos'][0] <= impact_x:
+                p['pos'][0] = impact_x 
+                p['color'] = BLUE
+                p['state'] = 'falling'
+                
+                # Anode Heel Effect Physics (Absorption)
+                spread = random.uniform(-4, 4)
+                intensity_factor = (22 / anode_angle) 
+                survival_prob = 0.55 + (spread * 0.2 * intensity_factor)
+                
+                # If random check fails, particle is absorbed by the "Heel"
+                if random.random() > max(0.01, min(0.99, survival_prob)):
+                    self.particles.remove(p)
+                    continue
+
+                p['vel'] = [spread, 6 + (kvp/70)] 
+
+            # Detection at the bottom for the Intensity Graph
+            if p['state'] == 'falling':
+                # Shielding Check
+                if shield_obj.is_in_shield_range(p['pos'], shield_thick):
+                    if random.randint(0, 120) < shield_thick:
+                        if p in self.particles: self.particles.remove(p)
+                        continue
+                
+                # Register hits for the graph before particle leaves screen
+                if p['pos'][1] > HEIGHT - 30:
+                    if p['pos'][0] < ANODE_X: self.anode_hits += 1
+                    else: self.cathode_hits += 1
+
+                if p['pos'][1] > HEIGHT:
+                    if p in self.particles: self.particles.remove(p)
+
+            # Cleanup out of bounds
+            if p['pos'][0] < 0 or p['pos'][0] > WIDTH:
+                if p in self.particles: self.particles.remove(p)
+        
+        # IMPORTANT: Returns total hits to main.py for the graph
+        return self.anode_hits + self.cathode_hits
+
+    def draw(self, screen):
+        for p in self.particles:
+            pygame.draw.circle(screen, p['color'], (int(p['pos'][0]), int(p['pos'][1])), 3)
